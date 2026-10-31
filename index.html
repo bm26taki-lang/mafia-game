@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070f">
+<title>المافيا</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="net" class="net" hidden>جارٍ إعادة الاتصال…</div>
+
+<!-- الرئيسية -->
+<section id="home" class="screen">
+  <div class="hero">
+    <h1 class="logo">MAFIA</h1>
+    <p class="logo-ar">المافيا</p>
+    <p class="tag">استنتاج · خداع · انتصار</p>
+  </div>
+  <div class="stack">
+    <label class="field">اسمك في اللعبة
+      <input id="name" maxlength="16" placeholder="اكتب اسمك" autocomplete="off">
+    </label>
+    <button id="btnCreate" class="btn gold">＋ إنشاء غرفة</button>
+    <button id="btnJoin" class="btn blue">الانضمام برمز</button>
+  </div>
+</section>
+
+<!-- الغرفة الخاصة -->
+<section id="lobby" class="screen" hidden>
+  <header class="bar">
+    <button id="btnBack" class="icon" aria-label="مغادرة">→</button>
+    <h2>غرفة خاصة</h2>
+    <button id="btnMenu" class="icon" aria-label="إعدادات الغرفة" hidden>⋮</button>
+  </header>
+  <div class="codecard">
+    <small>رمز الغرفة</small>
+    <div class="code"><span id="code">------</span><button id="btnCopy" class="icon sm" aria-label="نسخ الرمز">⧉</button></div>
+    <small class="hint">شارك الرمز مع أصدقائك للانضمام</small>
+  </div>
+  <div class="count"><span>اللاعبون</span><b id="count">1/12</b></div>
+  <div id="full" class="full" hidden>اكتمل عدد اللاعبين</div>
+  <ul id="players" class="players"></ul>
+  <div class="foot">
+    <p id="startHint" class="hint center"></p>
+    <button id="btnMain" class="btn blue">بدء المباراة</button>
+  </div>
+</section>
+
+<!-- المباراة (مؤقتة) -->
+<section id="match" class="screen" hidden>
+  <div class="hero"><h1 class="logo sm">بدأت المباراة</h1><p class="tag">شاشة الأدوار تُبنى في المهمة التالية</p></div>
+  <button id="btnShowRole" class="btn blue">عرض دوري</button>
+  <button id="btnLeaveMatch" class="btn ghost">مغادرة الغرفة</button>
+</section>
+
+<!-- بطاقة الدور السري -->
+<section id="role" class="screen" hidden>
+  <header class="bar"><span></span><h2>دورك في اللعبة</h2><span></span></header>
+  <div id="roleCard" class="rolecard">
+    <div id="roleTeam" class="roleteam"></div>
+    <h1 id="roleName" class="rolename"></h1>
+    <p class="hint center">هذا دورك السري، لا تُرِه لأحد</p>
+  </div>
+  <button id="btnRoleOk" class="btn blue">موافق</button>
+</section>
+
+<nav id="nav" class="nav">
+  <button data-go="home" class="on">الرئيسية</button>
+  <button data-go="rooms">الغرف</button>
+  <button data-go="profile">الملف الشخصي</button>
+  <button data-go="settings">الإعدادات</button>
+</nav>
+
+<div id="sheet" class="sheet" hidden><div class="panel"></div></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
