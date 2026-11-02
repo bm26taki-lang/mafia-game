@@ -285,11 +285,14 @@ io.on('connection', socket => {
     if (err) return cb({ ok: false, error: err });
     assignRoles(c.room);               // random, server-side, one time only; throws (-> error ack) before anything changes
     c.room.started = true;
-c.room.match = createMatchState(c.room);
+
+push(c.room);
 cb({ ok: true });
     // Each player gets ONLY their own role, on their own socket. Nothing role-related goes to the room channel.
     c.room.players.forEach(p => { const s = io.sockets.sockets.get(p.socketId); if (s) s.emit('role:assigned', roleView(c.room, p.id)); });
-    io.to(c.room.code).emit('match:started'); push(c.room);
+    io.to(c.room.code).emit('match:started');
+sendNightTurn(c.room);
+push(c.room);
   });
 
   
