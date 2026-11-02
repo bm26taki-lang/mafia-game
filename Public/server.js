@@ -306,3 +306,63 @@ module.exports = { ROLES, buildDeck, mafiaCount, assignRoles, shuffle, MIN_PLAYE
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`MAFIA server on :${PORT}`));
+// ========================================
+// MAFIA MATCH ENGINE - المرحلة الثانية
+// أساس نظام المباراة
+// ========================================
+
+function createMatchState(room) {
+  if (!room.started || !room.roles) {
+    throw new Error('لا يمكن إنشاء مباراة قبل توزيع الأدوار');
+  }
+
+  return {
+    phase: 'night',
+    nightStep: 'sheikh',
+    round: 1,
+    alive: [...room.players.keys()],
+    eliminated: [],
+    actions: {
+      mafiaTarget: null,
+      ambulanceTarget: null,
+      sniperTarget: null,
+      detectiveTarget: null
+    },
+    votes: {},
+    defensePlayer: null,
+    finalVotes: {},
+    speechIndex: 0,
+    speechTimeLimit: 60,
+    tieTimeLimit: 30,
+    finished: false,
+    winner: null
+  };
+}
+
+function isAlive(room, playerId) {
+  return !!room.match &&
+    room.match.alive.includes(playerId);
+}
+
+function clearNightActions(room) {
+  room.match.actions = {
+    mafiaTarget: null,
+    ambulanceTarget: null,
+    sniperTarget: null,
+    detectiveTarget: null
+  };
+}
+
+function eliminatePlayer(room, playerId) {
+  if (!isAlive(room, playerId)) return false;
+
+  room.match.alive =
+    room.match.alive.filter(id => id !== playerId);
+
+  room.match.eliminated.push({
+    id: playerId,
+    role: room.roles.get(playerId)
+  });
+
+  return true;
+}
