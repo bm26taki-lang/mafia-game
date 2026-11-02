@@ -56,11 +56,6 @@ socket.on('role:assigned', r => { S.role = r; showRole(); });
 socket.on('match:started', () => { if (!S.role) show('match'); });
 $('#btnRoleOk').onclick = () => show('match');
 // استقبال دور الليل
-socket.on('night:your_turn', data => {
-  show('match');
-  toast(data.message || 'حان دورك في الليل');
-});
-
 // نتيجة تحقيق المحقق
 socket.on('detective:result', data => {
   toast(data.team === 'mafia'
