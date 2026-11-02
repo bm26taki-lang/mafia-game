@@ -55,6 +55,101 @@ function showRole() {
 socket.on('role:assigned', r => { S.role = r; showRole(); });
 socket.on('match:started', () => { if (!S.role) show('match'); });
 $('#btnRoleOk').onclick = () => show('match');
+// استقبال دور الليل
+socket.on('night:your_turn', data => {
+  show('match');
+  toast(data.message || 'حان دورك في الليل');
+});
+
+// نتيجة تحقيق المحقق
+socket.on('detective:result', data => {
+  toast(data.team === 'mafia'
+    ? 'الهدف من فريق المافيا'
+    : 'الهدف من فريق المواطنين');
+});
+
+// بداية النهار
+socket.on('day:started', data => {
+  show('match');
+  toast('بدأ النهار رقم ' + data.round);
+});
+// ===== اختيار هدف الليل =====
+let activeNightStep = null;
+let selectedTarget = null;
+let targetClicks = 0;
+
+socket.on('night:your_turn', data => {
+  activeNightStep = data.step;
+  selectedTarget = null;
+  targetClicks = 0;
+  renderNightTargets();
+});
+
+function renderNightTargets() {
+  let panel = $('#nightPanel');
+
+  if (!panel) {
+    panel = el('div', { id: 'nightPanel' });
+    $('#match').prepend(panel);
+  }
+
+  panel.replaceChildren(
+    el('h2', { textContent: 'اختر هدفك' }),
+    el('p', {
+      textContent: 'اضغط على اللاعب نفسه 3 مرات متتالية'
+    })
+  );
+
+  const list = el('div', {
+    style: 'display:grid;grid-template-columns:repeat(2,1fr);gap:10px'
+  });
+
+  S.room.players
+    .filter(p => p.id !== S.me)
+    .forEach(p => {
+      const btn = el('button', {
+        className: 'btn ghost',
+        textContent: p.name,
+        onclick: () => {
+          if (selectedTarget === p.id) {
+            targetClicks++;
+          } else {
+            selectedTarget = p.id;
+            targetClicks = 1;
+          }
+
+          renderNightTargets();
+        }
+      });
+
+      if (selectedTarget === p.id) {
+        btn.textContent = p.name + ' (' + targetClicks + '/3)';
+      }
+
+      list.append(btn);
+    });
+
+  panel.append(list);
+
+  const confirmBtn = el('button', {
+    className: 'btn blue',
+    textContent: 'تأكيد القرار',
+    disabled: targetClicks < 3,
+    onclick: async () => {
+      const result = await call('night:action', {
+        targetId: selectedTarget
+      });
+
+      if (!result.ok) return toast(result.error);
+
+      panel.replaceChildren(
+        el('p', { textContent: 'تم إرسال قرارك، انتظر بقية اللاعبين' })
+      );
+    }
+  });
+
+  panel.append(confirmBtn);
+}
 $('#btnShowRole').onclick = showRole;
 // Same account opened in another tab: this tab goes idle but must NOT erase the shared saved session.
 socket.on('session:replaced', () => { S = { token: null, code: null, me: null, room: null, role: null }; closeSheet(); show('home'); toast('فُتحت الجلسة في نافذة أخرى'); });
