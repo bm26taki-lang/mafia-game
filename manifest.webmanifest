@@ -1,0 +1,14 @@
+
+{
+  "name": "MAFIA - لعبة المافيا",
+  "short_name": "MAFIA",
+  "description": "لعبة المافيا الجماعية",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05070f",
+  "theme_color": "#05070f"
+}
