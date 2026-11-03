@@ -340,7 +340,7 @@ push(c.room);
     } else {
           startDay(room);
   }
-
+  }
   function sendNightTurn(room) {
     const match = room.match;
     if (!match || match.phase !== 'night') return;
