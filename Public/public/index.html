@@ -54,6 +54,32 @@
   <div class="hero"><h1 class="logo sm">بدأت المباراة</h1><p class="tag">شاشة الأدوار تُبنى في المهمة التالية</p></div>
   <button id="btnShowRole" class="btn blue">عرض دوري</button>
   <button id="btnLeaveMatch" class="btn ghost">مغادرة الغرفة</button>
+  <div id="dayPanel" hidden>
+  <h2 id="dayTitle">مرحلة النهار</h2>
+  <p id="dayMessage">انتظر بدء النهار</p>
+
+  <div id="speechPanel" hidden>
+    <p id="speakerName"></p>
+    <p id="speechTimer">60</p>
+  </div>
+
+  <div id="votePanel" hidden>
+    <h3>اختر اللاعب للتصويت</h3>
+    <div id="votePlayers"></div>
+    <button id="btnVote" class="btn blue" disabled>تأكيد التصويت</button>
+  </div>
+
+  <div id="defensePanel" hidden>
+    <h3>مرحلة الدفاع</h3>
+    <p id="defenseMessage"></p>
+  </div>
+
+  <div id="finalVotePanel" hidden>
+    <h3>التصويت النهائي</h3>
+    <div id="finalVotePlayers"></div>
+    <button id="btnFinalVote" class="btn blue" disabled>تأكيد التصويت النهائي</button>
+  </div>
+  </div>
 </section>
 
 <!-- بطاقة الدور السري -->
