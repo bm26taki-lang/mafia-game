@@ -496,8 +496,11 @@ function finishMatchIfWinner(room) {
   });
 
   clearNightActions(room);
-  push(room);
-  startDay(room);
+
+if (finishMatchIfWinner(room)) return;
+
+push(room);
+startDay(room);
 }
   function startDay(room) {
     const match = room.match;
