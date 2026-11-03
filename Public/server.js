@@ -493,6 +493,7 @@ function isAlive(room, playerId) {
   return !!room.match &&
     room.match.alive.includes(playerId);
 }
+function clearNightActions(room) {
   room.match.actions = {
     mafiaTarget: null,
     silencedTarget: null,
