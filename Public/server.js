@@ -1002,7 +1002,45 @@ on('day:final_vote', ({ targetId }, cb) => {
 
     cb({ ok: true });
   });
-  
+    on('goodboy:choose', ({ targetId }, cb) => {
+    const c = ctx();
+    if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
+
+    const room = c.room;
+    const match = room.match;
+    const pending = match?.goodboyPending;
+
+    if (!match || match.phase !== 'goodboy' || !pending) {
+      return cb({ ok: false, error: 'اختيار الولد الصالح غير مفتوح' });
+    }
+
+    if (pending.playerId !== c.me.id) {
+      return cb({ ok: false, error: 'هذا الاختيار ليس لك' });
+    }
+
+    if (!match.alive.includes(targetId) || targetId === c.me.id) {
+      return cb({ ok: false, error: 'الهدف غير صالح' });
+    }
+
+    const player = room.players.get(targetId);
+    const roleId = room.roles.get(targetId);
+
+    eliminatePlayer(room, targetId);
+    match.goodboyPending = null;
+
+    io.to(room.code).emit('goodboy:target_eliminated', {
+      id: targetId,
+      name: player?.name || 'لاعب',
+      role: ROLES[roleId].name
+    });
+
+    if (!finishMatchIfWinner(room) && pending.resume) {
+      pending.resume();
+    }
+
+    push(room);
+    cb({ ok: true });
+  });
   socket.on('disconnect', () => {
     const c = ctx(); if (!c || c.me.socketId !== socket.id) return;
     const { room, me } = c;
