@@ -1118,4 +1118,34 @@ function eliminatePlayer(room, playerId) {
   });
 
   return true;
-}
+function startGoodboyChoice(room, eliminatedId, resume) {
+  const match = room.match;
+
+  if (!match || match.goodboyUsed) return false;
+  if (room.roles.get(eliminatedId) !== 'goodboy') return false;
+
+  const targets = match.alive.filter(
+    id => id !== eliminatedId && room.players.has(id)
+  );
+
+  match.goodboyUsed = true;
+
+  if (targets.length === 0) return false;
+
+  match.phase = 'goodboy';
+  match.goodboyPending = {
+    playerId: eliminatedId,
+    resume
+  };
+
+  io.to(room.code).emit('goodboy:choose', {
+    playerId: eliminatedId,
+    targets: targets.map(id => ({
+      id,
+      name: room.players.get(id).name
+    }))
+  });
+
+  push(room);
+  return true;
+    }}
