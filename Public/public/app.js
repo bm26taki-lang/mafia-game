@@ -207,6 +207,70 @@ socket.on('day:tie_defense_started', data => {
     }
   }, 1000);
 });
+
+// التصويت بين اللاعبين المتعادلين
+socket.on('day:tie_voting_started', data => {
+  clearInterval(tieDefenseInterval);
+
+  $('#defensePanel').hidden = true;
+  $('#finalVotePanel').hidden = true;
+  $('#votePanel').hidden = false;
+
+  // المتعادلون لا يحق لهم التصويت
+  if (!(data.eligibleVoters || []).includes(S.me?.id)) {
+    $('#votePanel').hidden = true;
+    $('#defensePanel').hidden = false;
+    $('#defenseMessage').textContent =
+      'أنت من اللاعبين المتعادلين، لا يمكنك التصويت في هذه المرحلة';
+    return;
+  }
+
+  const list = $('#votePlayers');
+  const confirmBtn = $('#btnVote');
+  let selectedId = null;
+
+  list.replaceChildren();
+  confirmBtn.disabled = true;
+
+  (data.candidates || []).forEach(player => {
+    const btn = el('button', {
+      className: 'btn ghost',
+      textContent: player.name,
+      onclick: () => {
+        selectedId = player.id;
+
+        list.querySelectorAll('button').forEach(b => {
+          b.className = 'btn ghost';
+        });
+
+        btn.className = 'btn blue';
+        confirmBtn.disabled = false;
+      }
+    });
+
+    list.append(btn);
+  });
+
+  confirmBtn.onclick = async () => {
+    if (!selectedId) return;
+
+    confirmBtn.disabled = true;
+
+    const result = await call('day:tie_vote', {
+      targetId: selectedId
+    });
+
+    if (!result.ok) {
+      confirmBtn.disabled = false;
+      return toast(result.error);
+    }
+
+    toast('تم تسجيل تصويتك بين المتعادلين');
+  };
+
+  toast('صوّت بين اللاعبين المتعادلين');
+});
+
 // التصويت النهائي
 socket.on('day:final_voting_started', data => {
   $('#defensePanel').hidden = true;
