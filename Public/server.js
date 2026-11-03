@@ -502,7 +502,26 @@ function createMatchState(room) {
     winner: null
   };
     }
-  
+ 
+function clearMatchTimers(room) {
+  const match = room.match;
+  if (!match) return;
+
+  const timers = [
+    'dayTimer',
+    'speechTimer',
+    'voteTimer',
+    'defenseTimer',
+    'tieTimer',
+    'turnTimer'
+  ];
+
+  for (const key of timers) {
+    clearTimeout(match[key]);
+    match[key] = null;
+  }
+}
+
 
 function isAlive(room, playerId) {
   return !!room.match &&
