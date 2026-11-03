@@ -489,7 +489,7 @@ function createMatchState(room) {
     finalVotes: {},
 
     speechIndex: 0,
-    speechTimeLimit: 60,
+    speechTimeLimit: 90,
     tieTimeLimit: 30,
 
     dayTimer: null,
