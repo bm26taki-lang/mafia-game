@@ -141,6 +141,9 @@ function removePlayer(room, pid, kickReason) {
   const p = room.players.get(pid);
   if (!p) return;
   clearTimeout(p.timer); tokens.delete(p.token);
+  if (room.match && !room.match.finished) {
+  eliminatePlayer(room, pid);
+  }
   room.players.delete(pid); room.roles?.delete(pid);
   const s = io.sockets.sockets.get(p.socketId);
   if (s) { if (kickReason) s.emit('room:kicked', { reason: kickReason }); s.leave(room.code); s.data = {}; }
