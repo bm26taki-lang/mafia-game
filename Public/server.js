@@ -472,25 +472,37 @@ function createMatchState(room) {
     phase: 'night',
     nightStep: 'sheikh',
     round: 1,
+
     alive: [...room.players.keys()],
     eliminated: [],
-        actions: {
+
+    actions: {
       mafiaTarget: null,
       silencedTarget: null,
       ambulanceTarget: null,
       sniperTarget: null,
       detectiveTarget: null
     },
+
     votes: {},
     defensePlayer: null,
     finalVotes: {},
+
     speechIndex: 0,
     speechTimeLimit: 60,
     tieTimeLimit: 30,
+
+    dayTimer: null,
+    speechTimer: null,
+    voteTimer: null,
+    defenseTimer: null,
+    tieTimer: null,
+
     finished: false,
     winner: null
   };
-}
+    }
+  
 
 function isAlive(room, playerId) {
   return !!room.match &&
