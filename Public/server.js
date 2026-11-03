@@ -474,7 +474,6 @@ push(c.room);
       match.speechIndex++;
       advanceDaySpeaker(room);
     }, match.speechTimeLimit * 1000);
-      }
     
   on('night:action', ({ targetId }, cb) => {
     const c = ctx();
