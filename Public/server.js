@@ -670,10 +670,15 @@ function createMatchState(room) {
       sniperTarget: null,
       detectiveTarget: null
     },
-
     votes: {},
+    voteCandidates: [],
     defensePlayer: null,
     finalVotes: {},
+    tieCandidates: [],
+    votePhase: null,
+    votingTimer: null,
+    finalVoteTimer: null,
+    tieTimer: null,
 
     speechIndex: 0,
     speechQueue: [],
