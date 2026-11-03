@@ -52,40 +52,55 @@ function rate(map, ip, windowMs, add) {
   map.set(ip, a);
   return a.length;
 }
-setInterval ( ( ) = > {  for  ( const  m  of  Object.values ( hits ) ) for ( const k of m.keys ( ) ) if ( ! rate ( m , k , 60000 ) ) m.delete ( k ) ; } , 300000 ) .unref ( ) ;​​​​​​        
-const  ipOf = s => ( process . env . TRUST_PROXY && String ( s . handshake . headers [ 'x-forwarded-for' ] || '' ) . split ( ',' ) [ 0 ] . trim ( ) ) || s . handshake . address ;
 
-// ---- الأدوار (من جانب الخادم فقط؛ لا تُدرج أبدًا ضمن العرض)
-const  ROLES = {
-  sheikh :     {  name : 'شيخ المافيا' ,     الفريق : 'mafia'  } ,      // فريد
-  كاتم الصوت :   {  name : 'مافياكيت' ,   الفريق : 'mafia'  } ,      // فريد
-  mafia :      {  name : 'مافيا' ,           team : 'mafia'  } ,      // مقعد المافيا العادي، يُستخدم فقط عندما يكون عدد المافيا > 2 (الاسم مفترض، انظر التقرير)
-  قناص :     {  الاسم : 'القناص الصالح' ,   الفريق : 'مواطنون'  } ,   // فريد
-  المحقق : {  الاسم : 'المحقق' ,          الفريق : 'مواطنون'  } ,   // فريد
-  الولد الصالح :    {  الاسم : 'الولد الصالح' ,    الفريق : 'مواطنون'  } ,   // فريد
-  الإسعاف : {  الاسم : 'الإسعاف الصالح' , الفريق : 'مواطنون'  } ,   // فريد
-  مواطن :    {  الاسم : 'المواطن العادي' , الفريق : 'مواطنون'  } ,   // حشو قابل للتكرار
-} ;
-const  mafiaCount = n => ( n >= 8 && n <= 13 ) ? 2 : ( n >= 14 && n <= 16 ) ? 3 : n === 17 ? 4 : null ;
-دالة  بناء سطح السفينة ( ن )  {
-  const  m = mafiaCount ( n ) ;
-  if  ( ! Number . isInteger ( n ) || m === null )  throw  new  RangeError ( `عدد اللاعبين ${ n } خارج النطاق ${ MIN_PLAYERS } - ${ MAX_PLAYERS } ` ) ;
-  const  deck = [ 'sheikh' , 'silencer' ] ;                        // يُحتسب الشيخ ضمن إجمالي المافيا
-  for  ( let  i = 0 ; i < m - 2 ; i ++ )  deck . push ( 'mafia' ) ;
-  deck.push ( ' sniper' , 'detective' , 'goodboy' , 'ambulance' ) ;   // جميع المواطنين المميزين الأربعة من 8 لاعبين فأكثر
-  بينما  ( طول سطح السفينة < ن ) سطح السفينة . دفع ( 'مواطن' ) ؛ 
-   سطح العودة ؛
+setInterval(() => { for (const m of Object.values(hits)) for (const k of m.keys()) if (!rate(m, k, 60000)) m.delete(k); }, 300000).unref();
+const ipOf = s => (process.env.TRUST_PROXY && String(s.handshake.headers['x-forwarded-for'] || '').split(',')[0].trim()) || s.handshake.address;
+
+// ---- Roles (server-side only; never part of view()) ----
+const ROLES = {
+  sheikh:    { name: 'شيخ المافيا',    team: 'mafia' },
+  silencer:  { name: 'مافيا التسكيت',  team: 'mafia' },
+  mafia:     { name: 'مافيا',          team: 'mafia' },
+  sniper:    { name: 'القناص الصالح',  team: 'citizens' },
+  detective: { name: 'المحقق',         team: 'citizens' },
+  goodboy:   { name: 'الولد الصالح',   team: 'citizens' },
+  ambulance: { name: 'الإسعاف الصالح', team: 'citizens' },
+  citizen:   { name: 'المواطن العادي', team: 'citizens' },
+};
+
+const mafiaCount = n => (n >= 8 && n <= 13) ? 2 : (n >= 14 && n <= 16) ? 3 : n === 17 ? 4 : null;
+
+function buildDeck(n) {
+  const m = mafiaCount(n);
+  if (!Number.isInteger(n) || m === null) {
+    throw new RangeError(`عدد اللاعبين ${n} خارج النطاق ${MIN_PLAYERS}-${MAX_PLAYERS}`);
+  }
+
+  const deck = ['sheikh', 'silencer'];
+  for (let i = 0; i < m - 2; i++) deck.push('mafia');
+
+  deck.push('sniper', 'detective', 'goodboy', 'ambulance');
+
+  while (deck.length < n) deck.push('citizen');
+  return deck;
 }
-دالة  shuffle ( a )  {  // فيشر-ياتس مع مولد أرقام عشوائية مشفر (CSPRNG)
-  for  ( let  i = a.length - 1 ; i > 0 ; i-- ) { const j = crypto.randomInt ( i + 1 ) ; [ a [ i ] , a [ j ] ] = [ a [ j ] , a [ i ] ] ; }​​​​​   
-  أعد  أ ؛
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
-دالة  تعيين الأدوار ( الغرفة )  {  // لمرة واحدة: يتم قفلها للأبد بمجرد تعيينها
-  إذا  ( room . role )  ألقى  خطأً جديدًا  ( 'الأدوار وُزّعت الفعل' ) ؛
-  const  ids = [ ... room . players . keys ( ) ] ;
-  const  deck = shuffle ( buildDeck ( ids . length ) ) ;
-  room.roles = new Map ( ids.map ( ( id , i ) = > [ id , deck [ i ] ] ) ) ;​​​ 
-}
+
+function assignRoles(room) {
+  if (room.roles) throw new Error('الأدوار وُزّعت بالفعل');
+
+  const ids = [...room.players.keys()];
+  const deck = shuffle(buildDeck(ids.length));
+  room.roles = new Map(ids.map((id, i) => [id, deck[i]]));
+                  }
+    
 // معلومات الدور الوحيدة التي تغادر الخادم: دور اللاعب نفسه.
 const roleView = (room, pid) => { const id = room.roles?.get(pid); return id ? { id, name: ROLES[id].name, team: ROLES[id].team } : undefined; };
 
