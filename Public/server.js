@@ -640,6 +640,83 @@ function startTieVote(room) {
 
   push(room);
 }
+  // استقبال التصويت بين المتعادلين
+on('day:tie_vote', ({ targetId }, cb) => {
+  const c = ctx();
+  if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
+
+  const room = c.room;
+  const match = room.match;
+
+  if (!match || match.phase !== 'voting' ||
+      match.votePhase !== 'tie_runoff') {
+    return cb({ ok: false, error: 'تصويت التعادل غير مفتوح' });
+  }
+
+  if (!match.tieVoters.includes(c.me.id)) {
+    return cb({ ok: false, error: 'لا يمكنك التصويت في هذه المرحلة' });
+  }
+
+  if (!match.tieCandidates.includes(targetId)) {
+    return cb({ ok: false, error: 'الهدف غير صالح' });
+  }
+
+  if (match.tieVotes[c.me.id]) {
+    return cb({ ok: false, error: 'لقد صوتّ بالفعل' });
+  }
+
+  match.tieVotes[c.me.id] = targetId;
+
+  if (Object.keys(match.tieVotes).length === match.tieVoters.length) {
+    const counts = {};
+
+    Object.values(match.tieVotes).forEach(id => {
+      counts[id] = (counts[id] || 0) + 1;
+    });
+
+    const highest = Math.max(...Object.values(counts));
+    const leaders = Object.keys(counts).filter(
+      id => counts[id] === highest
+    );
+
+    if (leaders.length === 1) {
+      const eliminatedId = leaders[0];
+      const player = room.players.get(eliminatedId);
+      const roleId = room.roles.get(eliminatedId);
+
+      eliminatePlayer(room, eliminatedId);
+
+      io.to(room.code).emit('day:player_eliminated', {
+        id: eliminatedId,
+        name: player?.name || 'لاعب',
+        role: ROLES[roleId].name
+      });
+
+      if (!finishMatchIfWinner(room)) {
+        match.round++;
+        match.phase = 'night';
+        match.nightStep = 'sheikh';
+        clearNightActions(room);
+        push(room);
+        sendNightTurn(room);
+      }
+    } else {
+      io.to(room.code).emit('day:tie_no_elimination', {
+        message: 'استمر التعادل، لم يخرج أي لاعب'
+      });
+
+      match.round++;
+      match.phase = 'night';
+      match.nightStep = 'sheikh';
+      clearNightActions(room);
+      push(room);
+      sendNightTurn(room);
+    }
+  }
+
+  push(room);
+  cb({ ok: true });
+});
   function startFinalVote(room) {
   const match = room.match;
   if (!match || match.finished) return;
