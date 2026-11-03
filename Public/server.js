@@ -314,14 +314,7 @@ push(c.room);
     { step: 'ambulance', role: 'ambulance', action: 'ambulanceTarget' },
     { step: 'sniper', role: 'sniper', action: 'sniperTarget' },
     { step: 'detective', role: 'detective', action: 'detectiveTarget' }
-  ];
-  const nightOrder = [
-    { step: 'sheikh', role: 'sheikh', action: 'mafiaTarget' },
-    { step: 'silencer', role: 'silencer', action: 'silencedTarget' },
-    { step: 'ambulance', role: 'ambulance', action: 'ambulanceTarget' },
-    { step: 'sniper', role: 'sniper', action: 'sniperTarget' },
-    { step: 'detective', role: 'detective', action: 'detectiveTarget' }
-  ];
+    };
 
   function advanceNightTurn(room) {
     const match = room.match;
