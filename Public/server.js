@@ -844,17 +844,8 @@ on('day:tie_vote', ({ targetId }, cb) => {
         id => counts[id] === highest
       );
 
-      if (leaders.length > 1) {
-        match.votePhase = 'tie';
-        match.tieCandidates = leaders;
-
-        io.to(room.code).emit('day:vote_tie', {
-          candidates: leaders.map(id => ({
-            id,
-            name: room.players.get(id)?.name || 'لاعب'
-          })),
-          duration: match.tieTimeLimit
-        });
+            if (leaders.length > 1) {
+        startTieDefense(room, leaders);
       } else {
         match.defensePlayer = leaders[0];
         match.phase = 'defense';
