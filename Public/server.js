@@ -535,7 +535,21 @@ startDay(room);
 
     if (match.speechIndex >= match.speechQueue.length) {
       room.players.forEach(p => p.mic = false);
-      io.to(room.code).emit('day:speech_finished');
+
+      match.phase = 'voting';
+      match.votePhase = 'initial';
+      match.votes = {};
+      match.voteCandidates = match.alive.filter(
+        id => room.players.has(id)
+      );
+
+      io.to(room.code).emit('day:voting_started', {
+        candidates: match.voteCandidates.map(id => ({
+          id,
+          name: room.players.get(id).name
+        }))
+      });
+
       push(room);
       return;
     }
