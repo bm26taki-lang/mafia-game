@@ -441,20 +441,7 @@ push(c.room);
       });
     }
 
-    const nextIndex = nightOrder.findIndex(
-      x => x.step === match.nightStep
-    ) + 1;
-
-    if (nextIndex < nightOrder.length) {
-      match.nightStep = nightOrder[nextIndex].step;
-      sendNightTurn(room);
-    } else {
-      match.phase = 'day';
-      match.nightStep = null;
-      io.to(room.code).emit('day:started', {
-        round: match.round
-      });
-    }
+      advanceNightTurn(room);
 
     cb({ ok: true });
   });
