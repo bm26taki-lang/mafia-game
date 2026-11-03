@@ -177,7 +177,36 @@ socket.on('day:defense_started', data => {
 
   toast('بدأت مرحلة الدفاع');
 });
+// عداد دفاع اللاعبين المتعادلين
+let tieDefenseInterval = null;
 
+socket.on('day:tie_defense_started', data => {
+  clearInterval(tieDefenseInterval);
+
+  $('#votePanel').hidden = true;
+  $('#finalVotePanel').hidden = true;
+  $('#defensePanel').hidden = false;
+
+  let remaining = data.duration || 30;
+
+  $('#defenseMessage').textContent =
+    data.name + ' يدافع عن نفسه (' +
+    data.current + '/' + data.total + ') — ' +
+    remaining + ' ثانية';
+
+  tieDefenseInterval = setInterval(() => {
+    remaining--;
+
+    $('#defenseMessage').textContent =
+      data.name + ' يدافع عن نفسه (' +
+      data.current + '/' + data.total + ') — ' +
+      remaining + ' ثانية';
+
+    if (remaining <= 0) {
+      clearInterval(tieDefenseInterval);
+    }
+  }, 1000);
+});
 // التصويت النهائي
 socket.on('day:final_voting_started', data => {
   $('#defensePanel').hidden = true;
