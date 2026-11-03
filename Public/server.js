@@ -1034,7 +1034,8 @@ function createMatchState(room) {
     nightStep: 'sheikh',
     round: 1,
     sniperBulletUsed: false,
-    
+goodboyUsed: false,
+goodboyPending: null,
     alive: [...room.players.keys()],
     eliminated: [],
 
