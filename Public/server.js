@@ -952,14 +952,25 @@ on('day:final_vote', ({ targetId }, cb) => {
         name: player?.name || 'لاعب',
         role: ROLES[roleId].name
       });
+            const resumeAfterElimination = () => {
+        if (!finishMatchIfWinner(room)) {
+          match.round++;
+          match.phase = 'night';
+          match.nightStep = 'sheikh';
+          clearNightActions(room);
+          push(room);
+          sendNightTurn(room);
+        }
+      };
 
-      if (!finishMatchIfWinner(room)) {
-        match.round++;
-        match.phase = 'night';
-        match.nightStep = 'sheikh';
-        clearNightActions(room);
-        push(room);
-        sendNightTurn(room);
+      const started = startGoodboyChoice(
+        room,
+        eliminatedId,
+        resumeAfterElimination
+      );
+
+      if (!started) {
+        resumeAfterElimination();
       }
     }
   }
