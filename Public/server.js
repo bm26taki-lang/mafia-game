@@ -984,7 +984,9 @@ on('day:final_vote', ({ targetId }, cb) => {
       return cb({ ok: false, error: 'الهدف غير صالح' });
 
     match.actions[current.action] = targetId;
-
+    if (current.step === 'sniper') {
+      match.sniperBulletUsed = true;
+  }
     if (current.step === 'detective') {
       const targetRole = room.roles.get(targetId);
       const targetTeam = ROLES[targetRole].team;
