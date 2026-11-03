@@ -271,6 +271,27 @@ socket.on('day:tie_voting_started', data => {
   toast('صوّت بين اللاعبين المتعادلين');
 });
 
+// إعلان نتيجة التصويت بين المتعادلين
+socket.on('day:tie_no_elimination', data => {
+  $('#votePanel').hidden = true;
+  $('#finalVotePanel').hidden = true;
+  $('#defensePanel').hidden = true;
+
+  toast(data.message || 'استمر التعادل، لم يخرج أي لاعب');
+});
+
+// إعلان اللاعب الذي تم إقصاؤه
+socket.on('day:player_eliminated', data => {
+  $('#votePanel').hidden = true;
+  $('#finalVotePanel').hidden = true;
+  $('#defensePanel').hidden = true;
+
+  toast(
+    'تم إقصاء ' + data.name +
+    ' — دوره: ' + data.role
+  );
+});
+          
 // التصويت النهائي
 socket.on('day:final_voting_started', data => {
   $('#defensePanel').hidden = true;
