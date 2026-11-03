@@ -601,6 +601,28 @@ startDay(room);
     }, match.speechTimeLimit * 1000);
   }
   // استقبال التصويت الأول
+ // بدء التصويت النهائي بعد انتهاء الدفاع
+function startFinalVote(room) {
+  const match = room.match;
+  if (!match || match.finished) return;
+
+  match.phase = 'voting';
+  match.votePhase = 'final';
+  match.finalVotes = {};
+
+  match.voteCandidates = match.alive.filter(
+    id => room.players.has(id)
+  );
+
+  io.to(room.code).emit('day:final_voting_started', {
+    candidates: match.voteCandidates.map(id => ({
+      id,
+      name: room.players.get(id).name
+    }))
+  });
+
+  push(room);
+}
   on('day:vote', ({ targetId }, cb) => {
     const c = ctx();
     if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
