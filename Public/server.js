@@ -407,7 +407,49 @@ push(c.room);
       message: 'حان دورك لاتخاذ قرار الليل'
     });
       }
-function resolveNight(room) {
+function finishMatchIfWinner(room) {
+  const match = room.match;
+  if (!match || match.finished) return false;
+
+  let mafiaAlive = 0;
+  let citizensAlive = 0;
+
+  for (const id of match.alive) {
+    const roleId = room.roles.get(id);
+    const team = ROLES[roleId].team;
+
+    if (team === 'mafia') mafiaAlive++;
+    else citizensAlive++;
+  }
+
+  let winner = null;
+
+  if (mafiaAlive === 0) {
+    winner = 'citizens';
+  } else if (mafiaAlive >= citizensAlive) {
+    winner = 'mafia';
+  }
+
+  if (!winner) return false;
+
+  match.finished = true;
+  match.phase = 'finished';
+  match.winner = winner;
+
+  clearMatchTimers(room);
+  room.players.forEach(p => p.mic = false);
+
+  io.to(room.code).emit('match:finished', {
+    winner,
+    message: winner === 'mafia'
+      ? 'فاز فريق المافيا!'
+      : 'فاز فريق المواطنين!'
+  });
+
+  push(room);
+  return true;
+}
+  function resolveNight(room) {
   const match = room.match;
   if (!match || match.phase !== 'night') return;
 
