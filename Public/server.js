@@ -1118,6 +1118,7 @@ function eliminatePlayer(room, playerId) {
   });
 
   return true;
+}
 function startGoodboyChoice(room, eliminatedId, resume) {
   const match = room.match;
 
@@ -1148,4 +1149,4 @@ function startGoodboyChoice(room, eliminatedId, resume) {
 
   push(room);
   return true;
-    }}
+    }
