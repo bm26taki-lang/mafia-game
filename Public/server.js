@@ -603,7 +603,68 @@ startDay(room);
   // استقبال التصويت الأول
  // بدء التصويت النهائي بعد انتهاء الدفاع
 // بدء التصويت بين اللاعبين المتعادلين
-function startTieVote(room) {
+// بدء دفاع اللاعبين المتعادلين، لاعباً بعد لاعب
+function startTieDefense(room, candidates) {
+  const match = room.match;
+  if (!match || match.finished) return;
+
+  match.phase = 'tie';
+  match.votePhase = 'tie_defense';
+
+  match.tieCandidates = candidates.filter(
+    id => match.alive.includes(id) && room.players.has(id)
+  );
+
+  match.tieDefenseQueue = [...match.tieCandidates];
+  match.tieDefenseIndex = 0;
+
+  function nextDefense() {
+    if (
+      room.match !== match ||
+      match.finished ||
+      match.phase !== 'tie' ||
+      match.votePhase !== 'tie_defense'
+    ) return;
+
+    while (
+      match.tieDefenseIndex < match.tieDefenseQueue.length &&
+      (
+        !match.alive.includes(match.tieDefenseQueue[match.tieDefenseIndex]) ||
+        !room.players.has(match.tieDefenseQueue[match.tieDefenseIndex])
+      )
+    ) {
+      match.tieDefenseIndex++;
+    }
+
+    if (match.tieDefenseIndex >= match.tieDefenseQueue.length) {
+      startTieVote(room);
+      return;
+    }
+
+    const playerId = match.tieDefenseQueue[match.tieDefenseIndex];
+    const player = room.players.get(playerId);
+
+    io.to(room.code).emit('day:tie_defense_started', {
+      playerId,
+      name: player.name,
+      duration: match.tieTimeLimit,
+      current: match.tieDefenseIndex + 1,
+      total: match.tieDefenseQueue.length
+    });
+
+    push(room);
+
+    match.tieTimer = setTimeout(() => {
+      if (room.match !== match || match.phase !== 'tie') return;
+
+      match.tieDefenseIndex++;
+      nextDefense();
+    }, match.tieTimeLimit * 1000);
+  }
+
+  nextDefense();
+  }
+  function startTieVote(room) {
   const match = room.match;
   if (!match || match.finished || match.phase !== 'tie') return;
 
