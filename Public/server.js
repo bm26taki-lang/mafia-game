@@ -338,13 +338,7 @@ push(c.room);
       match.nightStep = nightOrder[nextIndex].step;
       sendNightTurn(room);
     } else {
-      match.phase = 'day';
-      match.nightStep = null;
-
-      io.to(room.code).emit('day:started', {
-        round: match.round
-      });
-    }
+          startDay(room);
   }
 
   function sendNightTurn(room) {
@@ -399,6 +393,89 @@ push(c.room);
     });
       }
 
+  function startDay(room) {
+    const match = room.match;
+    if (!match || match.finished) return;
+
+    match.phase = 'day';
+    match.nightStep = null;
+    match.speechQueue = [...match.alive];
+    match.speechIndex = 0;
+
+    io.to(room.code).emit('day:started', {
+      round: match.round
+    });
+
+    advanceDaySpeaker(room);
+  }
+
+  function advanceDaySpeaker(room) {
+    const match = room.match;
+    if (!match || match.phase !== 'day') return;
+
+    clearTimeout(match.speechTimer);
+    match.speechTimer = null;
+
+    while (match.speechIndex < match.speechQueue.length) {
+      const id = match.speechQueue[match.speechIndex];
+      if (match.alive.includes(id) && room.players.has(id)) break;
+      match.speechIndex++;
+    }
+
+    if (match.speechIndex >= match.speechQueue.length) {
+      room.players.forEach(p => p.mic = false);
+      io.to(room.code).emit('day:speech_finished');
+      push(room);
+      return;
+    }
+
+    const id = match.speechQueue[match.speechIndex];
+    const player = room.players.get(id);
+    const s = player && io.sockets.sockets.get(player.socketId);
+
+    if (!player.connected || !s) {
+      const waitingIndex = match.speechIndex;
+
+      match.speechTimer = setTimeout(() => {
+        if (room.match !== match ||
+            match.phase !== 'day' ||
+            match.speechIndex !== waitingIndex) return;
+
+        match.speechIndex++;
+        advanceDaySpeaker(room);
+      }, GRACE_MS);
+
+      return;
+    }
+
+    room.players.forEach(p => p.mic = false);
+    player.mic = true;
+
+    io.to(room.code).emit('day:speaker', {
+      playerId: id,
+      name: player.name,
+      duration: match.speechTimeLimit
+    });
+
+    s.emit('day:your_speech_turn', {
+      duration: match.speechTimeLimit
+    });
+
+    push(room);
+
+    const currentIndex = match.speechIndex;
+
+    match.speechTimer = setTimeout(() => {
+      if (room.match !== match ||
+          match.phase !== 'day' ||
+          match.speechIndex !== currentIndex) return;
+
+      player.mic = false;
+      match.speechIndex++;
+      advanceDaySpeaker(room);
+    }, match.speechTimeLimit * 1000);
+      }
+    
   on('night:action', ({ targetId }, cb) => {
     const c = ctx();
     if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
@@ -489,6 +566,7 @@ function createMatchState(room) {
     finalVotes: {},
 
     speechIndex: 0,
+    speechQueue: [],
     speechTimeLimit: 90,
     tieTimeLimit: 30,
 
