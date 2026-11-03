@@ -366,6 +366,12 @@ push(c.room);
 
     if (!current) return;
 
+    // تجاوز دور القناص إذا استعمل رصاصته الوحيدة
+    if (current.step === 'sniper' && match.sniperBulletUsed) {
+      advanceNightTurn(room);
+      return;
+    }
+    
     const actor = [...room.roles.entries()].find(
       ([id, role]) =>
         role === current.role && match.alive.includes(id)
