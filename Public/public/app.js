@@ -377,6 +377,107 @@ function renderNightTargets() {
 
   panel.append(confirmBtn);
 }
+// ===== اختيار الولد الصالح =====
+let goodboyTargets = [];
+let goodboySelectedTarget = null;
+let goodboyClicks = 0;
+
+socket.on('goodboy:choose', data => {
+  goodboyTargets = data.targets || [];
+  goodboySelectedTarget = null;
+  goodboyClicks = 0;
+  show('match');
+  renderGoodboyTargets();
+});
+
+socket.on('goodboy:waiting', () => {
+  show('match');
+
+  let panel = $('#goodboyPanel');
+  if (!panel) {
+    panel = el('div', { id: 'goodboyPanel' });
+    $('#match').prepend(panel);
+  }
+
+  panel.replaceChildren(
+    el('h2', { textContent: 'اختيار الولد الصالح' }),
+    el('p', {
+      textContent: 'الولد الصالح يختار لاعباً، انتظر القرار'
+    })
+  );
+});
+
+socket.on('goodboy:target_eliminated', data => {
+  const panel = $('#goodboyPanel');
+  if (panel) panel.hidden = true;
+
+  toast('تم إقصاء ' + data.name + ' — دوره: ' + data.role);
+});
+
+function renderGoodboyTargets() {
+  let panel = $('#goodboyPanel');
+
+  if (!panel) {
+    panel = el('div', { id: 'goodboyPanel' });
+    $('#match').prepend(panel);
+  }
+
+  panel.hidden = false;
+  panel.replaceChildren(
+    el('h2', { textContent: 'اختيار الولد الصالح' }),
+    el('p', {
+      textContent: 'اختر لاعباً ليخرج معك. اضغط على صورته 3 مرات'
+    })
+  );
+
+  const list = el('div', {
+    style: 'display:grid;grid-template-columns:repeat(2,1fr);gap:10px'
+  });
+
+  goodboyTargets.forEach(player => {
+    const btn = el('button', {
+      className: 'btn ghost',
+      textContent: player.name,
+      onclick: () => {
+        if (goodboySelectedTarget === player.id) {
+          goodboyClicks++;
+        } else {
+          goodboySelectedTarget = player.id;
+          goodboyClicks = 1;
+        }
+
+        renderGoodboyTargets();
+      }
+    });
+
+    if (goodboySelectedTarget === player.id) {
+      btn.textContent = player.name + ' (' + goodboyClicks + '/3)';
+    }
+
+    list.append(btn);
+  });
+
+  panel.append(list);
+
+  panel.append(el('button', {
+    className: 'btn blue',
+    textContent: 'تأكيد الاختيار',
+    disabled: goodboyClicks < 3,
+    onclick: async () => {
+      const result = await call('goodboy:choose', {
+        targetId: goodboySelectedTarget
+      });
+
+      if (!result.ok) return toast(result.error);
+
+      panel.replaceChildren(
+        el('p', {
+          textContent: 'تم إرسال اختيارك، انتظر بقية اللاعبين'
+        })
+      );
+    }
+  }));
+  }
 $('#btnShowRole').onclick = showRole;
 // Same account opened in another tab: this tab goes idle but must NOT erase the shared saved session.
 socket.on('session:replaced', () => { S = { token: null, code: null, me: null, room: null, role: null }; closeSheet(); show('home'); toast('فُتحت الجلسة في نافذة أخرى'); });
