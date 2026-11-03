@@ -77,6 +77,24 @@ socket.on('night:result', data => {
 
   toast('نتيجة الليل: ' + names);
 });
+// إعلان نهاية المباراة والفائز
+socket.on('match:finished', data => {
+  show('match');
+  activeNightStep = null;
+  selectedTarget = null;
+  targetClicks = 0;
+
+  const panel = $('#nightPanel');
+
+  if (panel) {
+    panel.replaceChildren(
+      el('h2', { textContent: '🏆 انتهت المباراة' }),
+      el('h3', { textContent: data.message })
+    );
+  }
+
+  toast(data.message);
+});
 // بداية النهار
 socket.on('day:started', data => {
   show('match');
