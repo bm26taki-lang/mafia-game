@@ -414,8 +414,9 @@ function createMatchState(room) {
     round: 1,
     alive: [...room.players.keys()],
     eliminated: [],
-    actions: {
+        actions: {
       mafiaTarget: null,
+      silencedTarget: null,
       ambulanceTarget: null,
       sniperTarget: null,
       detectiveTarget: null
@@ -435,10 +436,9 @@ function isAlive(room, playerId) {
   return !!room.match &&
     room.match.alive.includes(playerId);
 }
-
-function clearNightActions(room) {
   room.match.actions = {
     mafiaTarget: null,
+    silencedTarget: null,
     ambulanceTarget: null,
     sniperTarget: null,
     detectiveTarget: null
