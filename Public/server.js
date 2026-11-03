@@ -493,9 +493,8 @@ function finishMatchIfWinner(room) {
   match.silencedPlayer =
     match.alive.includes(actions.silencedTarget)
       ? actions.silencedTarget
-      : null;
-
-  io.to(room.code).emit('night:result', {
+      : null; 
+      io.to(room.code).emit('night:result', {
     round: match.round,
     eliminated,
     silencedPlayer: match.silencedPlayer
@@ -503,11 +502,26 @@ function finishMatchIfWinner(room) {
 
   clearNightActions(room);
 
-if (finishMatchIfWinner(room)) return;
+  const goodboy = eliminated.find(
+    player => room.roles.get(player.id) === 'goodboy'
+  );
 
-push(room);
-startDay(room);
-}
+  if (goodboy) {
+    const started = startGoodboyChoice(room, goodboy.id, () => {
+      if (!finishMatchIfWinner(room)) {
+        push(room);
+        startDay(room);
+      }
+    });
+
+    if (started) return;
+  }
+
+  if (finishMatchIfWinner(room)) return;
+
+  push(room);
+  startDay(room);
+        }
   function startDay(room) {
     const match = room.match;
     if (!match || match.finished) return;
