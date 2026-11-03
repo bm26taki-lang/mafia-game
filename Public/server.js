@@ -602,7 +602,45 @@ startDay(room);
   }
   // استقبال التصويت الأول
  // بدء التصويت النهائي بعد انتهاء الدفاع
-function startFinalVote(room) {
+// بدء التصويت بين اللاعبين المتعادلين
+function startTieVote(room) {
+  const match = room.match;
+  if (!match || match.finished || match.phase !== 'tie') return;
+
+  const candidates = match.tieCandidates.filter(
+    id => match.alive.includes(id) && room.players.has(id)
+  );
+
+  const voters = match.alive.filter(
+    id => !candidates.includes(id) && room.players.has(id)
+  );
+
+  if (candidates.length < 2 || voters.length === 0) {
+    match.round++;
+    match.phase = 'night';
+    match.nightStep = 'sheikh';
+    clearNightActions(room);
+    push(room);
+    sendNightTurn(room);
+    return;
+  }
+
+  match.phase = 'voting';
+  match.votePhase = 'tie_runoff';
+  match.tieVotes = {};
+  match.tieVoters = voters;
+
+  io.to(room.code).emit('day:tie_voting_started', {
+    candidates: candidates.map(id => ({
+      id,
+      name: room.players.get(id).name
+    })),
+    eligibleVoters: voters
+  });
+
+  push(room);
+}
+  function startFinalVote(room) {
   const match = room.match;
   if (!match || match.finished) return;
 
