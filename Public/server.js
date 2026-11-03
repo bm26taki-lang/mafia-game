@@ -184,6 +184,19 @@ io.on('connection', socket => {
     const old = io.sockets.sockets.get(p.socketId);
     if (old && old.id !== socket.id) { old.emit('session:replaced'); old.leave(room.code); old.data = {}; }
     bind(socket, room, p);
+        if (
+      room.match &&
+      room.match.phase === 'night' &&
+      room.match.alive.includes(p.id)
+    ) {
+      const current = nightOrder.find(
+        x => x.step === room.match.nightStep
+      );
+
+      if (current && room.roles.get(p.id) === current.role) {
+        sendNightTurn(room);
+      }
+        }
     cb(session(room, p)); push(room);
   }
 
@@ -302,29 +315,93 @@ push(c.room);
     { step: 'sniper', role: 'sniper', action: 'sniperTarget' },
     { step: 'detective', role: 'detective', action: 'detectiveTarget' }
   ];
+  const nightOrder = [
+    { step: 'sheikh', role: 'sheikh', action: 'mafiaTarget' },
+    { step: 'silencer', role: 'silencer', action: 'silencedTarget' },
+    { step: 'ambulance', role: 'ambulance', action: 'ambulanceTarget' },
+    { step: 'sniper', role: 'sniper', action: 'sniperTarget' },
+    { step: 'detective', role: 'detective', action: 'detectiveTarget' }
+  ];
+
+  function advanceNightTurn(room) {
+    const match = room.match;
+    if (!match || match.phase !== 'night') return;
+
+    clearTimeout(match.turnTimer);
+    match.turnTimer = null;
+
+    const currentIndex = nightOrder.findIndex(
+      x => x.step === match.nightStep
+    );
+
+    if (currentIndex === -1) return;
+
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex < nightOrder.length) {
+      match.nightStep = nightOrder[nextIndex].step;
+      sendNightTurn(room);
+    } else {
+      match.phase = 'day';
+      match.nightStep = null;
+
+      io.to(room.code).emit('day:started', {
+        round: match.round
+      });
+    }
+  }
 
   function sendNightTurn(room) {
     const match = room.match;
-    const current = nightOrder.find(x => x.step === match.nightStep);
+    if (!match || match.phase !== 'night') return;
+
+    const current = nightOrder.find(
+      x => x.step === match.nightStep
+    );
+
     if (!current) return;
 
-    const actor = [...room.roles.entries()]
-      .find(([id, role]) =>
+    const actor = [...room.roles.entries()].find(
+      ([id, role]) =>
         role === current.role && match.alive.includes(id)
-      );
+    );
 
-    if (!actor) return;
+    // إذا لم يعد صاحب الدور موجوداً أو خرج من المباراة
+    if (!actor || !room.players.has(actor[0])) {
+      advanceNightTurn(room);
+      return;
+    }
 
     const player = room.players.get(actor[0]);
     const s = player && io.sockets.sockets.get(player.socketId);
 
-    if (s && player.connected) {
-      s.emit('night:your_turn', {
-        step: current.step,
-        message: 'حان دورك لاتخاذ قرار الليل'
-      });
+    // إذا كان اللاعب غير متصل، انتظر 45 ثانية ثم تجاوز دوره
+    if (!s || !player.connected) {
+      clearTimeout(match.turnTimer);
+
+      const waitingStep = match.nightStep;
+
+      match.turnTimer = setTimeout(() => {
+        if (
+          room.match !== match ||
+          match.phase !== 'night' ||
+          match.nightStep !== waitingStep
+        ) return;
+
+        advanceNightTurn(room);
+      }, GRACE_MS);
+
+      return;
     }
-  }
+
+    clearTimeout(match.turnTimer);
+    match.turnTimer = null;
+
+    s.emit('night:your_turn', {
+      step: current.step,
+      message: 'حان دورك لاتخاذ قرار الليل'
+    });
+      }
 
   on('night:action', ({ targetId }, cb) => {
     const c = ctx();
