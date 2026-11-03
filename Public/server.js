@@ -1206,7 +1206,6 @@ function startGoodboyChoice(room, eliminatedId, resume) {
   });
 
   io.to(room.code).except(chooserSocket.id).emit('goodboy:waiting');
-  });
 
   push(room);
   return true;
