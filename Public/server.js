@@ -916,18 +916,11 @@ on('day:final_vote', ({ targetId }, cb) => {
       id => counts[id] === highest
     );
 
+    
     if (leaders.length > 1) {
-      match.votePhase = 'final_tie';
-      match.tieCandidates = leaders;
-
-      io.to(room.code).emit('day:final_vote_tie', {
-        candidates: leaders.map(id => ({
-          id,
-          name: room.players.get(id)?.name || 'لاعب'
-        })),
-        duration: match.tieTimeLimit
-      });
+      startTieDefense(room, leaders);
     } else {
+      
       const eliminatedId = leaders[0];
       const player = room.players.get(eliminatedId);
       const roleId = room.roles.get(eliminatedId);
