@@ -1190,13 +1190,22 @@ function startGoodboyChoice(room, eliminatedId, resume) {
     playerId: eliminatedId,
     resume
   };
+  const chooser = room.players.get(eliminatedId);
+  const chooserSocket = chooser?.socketId
+    ? io.sockets.sockets.get(chooser.socketId)
+    : null;
 
-  io.to(room.code).emit('goodboy:choose', {
+  if (!chooserSocket) return false;
+
+  chooserSocket.emit('goodboy:choose', {
     playerId: eliminatedId,
     targets: targets.map(id => ({
       id,
       name: room.players.get(id).name
     }))
+  });
+
+  io.to(room.code).except(chooserSocket.id).emit('goodboy:waiting');
   });
 
   push(room);
