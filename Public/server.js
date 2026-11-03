@@ -353,7 +353,7 @@ push(c.room);
       match.nightStep = nightOrder[nextIndex].step;
       sendNightTurn(room);
     } else {
-          startDay(room);
+          resolveNight(room);
   }
   }
   function sendNightTurn(room) {
@@ -407,14 +407,65 @@ push(c.room);
       message: 'حان دورك لاتخاذ قرار الليل'
     });
       }
+function resolveNight(room) {
+  const match = room.match;
+  if (!match || match.phase !== 'night') return;
 
+  const actions = match.actions;
+  const eliminatedIds = new Set();
+
+  // حماية الإسعاف من هجوم المافيا
+  if (
+    actions.mafiaTarget &&
+    actions.mafiaTarget !== actions.ambulanceTarget
+  ) {
+    eliminatedIds.add(actions.mafiaTarget);
+  }
+
+  // القناص يستهدف لاعباً بشكل مستقل
+  if (actions.sniperTarget) {
+    eliminatedIds.add(actions.sniperTarget);
+  }
+
+  const eliminated = [];
+
+  for (const id of eliminatedIds) {
+    if (eliminatePlayer(room, id)) {
+      const player = room.players.get(id);
+      const roleId = room.roles.get(id);
+
+      eliminated.push({
+        id,
+        name: player ? player.name : 'لاعب',
+        role: ROLES[roleId].name
+      });
+    }
+  }
+
+  match.silencedPlayer =
+    match.alive.includes(actions.silencedTarget)
+      ? actions.silencedTarget
+      : null;
+
+  io.to(room.code).emit('night:result', {
+    round: match.round,
+    eliminated,
+    silencedPlayer: match.silencedPlayer
+  });
+
+  clearNightActions(room);
+  push(room);
+  startDay(room);
+}
   function startDay(room) {
     const match = room.match;
     if (!match || match.finished) return;
 
     match.phase = 'day';
     match.nightStep = null;
-    match.speechQueue = [...match.alive];
+    match.speechQueue = match.alive.filter(
+  id => id !== match.silencedPlayer
+);
     match.speechIndex = 0;
 
     io.to(room.code).emit('day:started', {
