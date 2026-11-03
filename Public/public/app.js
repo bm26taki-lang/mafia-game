@@ -98,7 +98,93 @@ socket.on('match:finished', data => {
 // بداية النهار
 socket.on('day:started', data => {
   show('match');
+  $('#dayPanel').hidden = false;
+  $('#dayTitle').textContent = 'مرحلة النهار';
+  $('#dayMessage').textContent = 'بدأ النهار رقم ' + data.round;
+
+  $('#votePanel').hidden = true;
+  $('#defensePanel').hidden = true;
+  $('#finalVotePanel').hidden = true;
+
   toast('بدأ النهار رقم ' + data.round);
+});
+
+// عرض خيارات التصويت
+function renderVoteChoices(candidates, isFinal = false) {
+  const panel = $(isFinal ? '#finalVotePanel' : '#votePanel');
+  const list = $(isFinal ? '#finalVotePlayers' : '#votePlayers');
+  const confirmBtn = $(isFinal ? '#btnFinalVote' : '#btnVote');
+
+  let selectedId = null;
+  list.replaceChildren();
+  confirmBtn.disabled = true;
+
+  candidates.forEach(player => {
+    const btn = el('button', {
+      className: 'btn ghost',
+      textContent: player.name,
+      onclick: () => {
+        selectedId = player.id;
+        list.querySelectorAll('button').forEach(b => {
+          b.className = 'btn ghost';
+        });
+        btn.className = 'btn blue';
+        confirmBtn.disabled = false;
+      }
+    });
+    list.append(btn);
+  });
+
+  panel.hidden = false;
+
+  confirmBtn.onclick = async () => {
+    if (!selectedId) return;
+
+    confirmBtn.disabled = true;
+
+    const result = await call(
+      isFinal ? 'day:final_vote' : 'day:vote',
+      { targetId: selectedId }
+    );
+
+    if (!result.ok) {
+      confirmBtn.disabled = false;
+      return toast(result.error);
+    }
+
+    toast('تم تسجيل تصويتك، انتظر بقية اللاعبين');
+  };
+}
+
+// التصويت الأول
+socket.on('day:voting_started', data => {
+  show('match');
+  $('#dayPanel').hidden = false;
+  $('#defensePanel').hidden = true;
+  $('#finalVotePanel').hidden = true;
+
+  renderVoteChoices(data.candidates || []);
+});
+
+// مرحلة الدفاع
+socket.on('day:defense_started', data => {
+  $('#votePanel').hidden = true;
+  $('#finalVotePanel').hidden = true;
+  $('#defensePanel').hidden = false;
+
+  $('#defenseMessage').textContent =
+    data.name + ' لديه 30 ثانية للدفاع عن نفسه';
+
+  toast('بدأت مرحلة الدفاع');
+});
+
+// التصويت النهائي
+socket.on('day:final_voting_started', data => {
+  $('#defensePanel').hidden = true;
+  $('#votePanel').hidden = true;
+
+  renderVoteChoices(data.candidates || [], true);
+  toast('بدأ التصويت النهائي');
 });
 // ===== اختيار هدف الليل =====
 let activeNightStep = null;
