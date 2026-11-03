@@ -62,7 +62,21 @@ socket.on('detective:result', data => {
     ? 'الهدف من فريق المافيا'
     : 'الهدف من فريق المواطنين');
 });
+// إعلان نتيجة الليل
+socket.on('night:result', data => {
+  const eliminated = data.eliminated || [];
 
+  if (eliminated.length === 0) {
+    toast('انتهى الليل: لم يخرج أي لاعب');
+    return;
+  }
+
+  const names = eliminated
+    .map(p => p.name + ' — ' + p.role)
+    .join('، ');
+
+  toast('نتيجة الليل: ' + names);
+});
 // بداية النهار
 socket.on('day:started', data => {
   show('match');
