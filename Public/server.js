@@ -694,6 +694,90 @@ function startFinalVote(room) {
     push(room);
     cb({ ok: true });
   });
+  // استقبال التصويت النهائي
+on('day:final_vote', ({ targetId }, cb) => {
+  const c = ctx();
+  if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
+
+  const room = c.room;
+  const match = room.match;
+
+  if (!match || match.phase !== 'voting' ||
+      match.votePhase !== 'final') {
+    return cb({ ok: false, error: 'التصويت النهائي غير مفتوح' });
+  }
+
+  if (!match.alive.includes(c.me.id)) {
+    return cb({ ok: false, error: 'أنت خارج المباراة' });
+  }
+
+  if (!match.voteCandidates.includes(targetId)) {
+    return cb({ ok: false, error: 'الهدف غير صالح' });
+  }
+
+  if (match.finalVotes[c.me.id]) {
+    return cb({ ok: false, error: 'لقد صوتّ بالفعل' });
+  }
+
+  match.finalVotes[c.me.id] = targetId;
+
+  const totalVotes = Object.keys(match.finalVotes).length;
+
+  io.to(room.code).emit('day:final_vote_progress', {
+    submitted: totalVotes,
+    required: match.alive.length
+  });
+
+  if (totalVotes === match.alive.length) {
+    const counts = {};
+
+    Object.values(match.finalVotes).forEach(id => {
+      counts[id] = (counts[id] || 0) + 1;
+    });
+
+    const highest = Math.max(...Object.values(counts));
+    const leaders = Object.keys(counts).filter(
+      id => counts[id] === highest
+    );
+
+    if (leaders.length > 1) {
+      match.votePhase = 'final_tie';
+      match.tieCandidates = leaders;
+
+      io.to(room.code).emit('day:final_vote_tie', {
+        candidates: leaders.map(id => ({
+          id,
+          name: room.players.get(id)?.name || 'لاعب'
+        })),
+        duration: match.tieTimeLimit
+      });
+    } else {
+      const eliminatedId = leaders[0];
+      const player = room.players.get(eliminatedId);
+      const roleId = room.roles.get(eliminatedId);
+
+      eliminatePlayer(room, eliminatedId);
+
+      io.to(room.code).emit('day:player_eliminated', {
+        id: eliminatedId,
+        name: player?.name || 'لاعب',
+        role: ROLES[roleId].name
+      });
+
+      if (!finishMatchIfWinner(room)) {
+        match.round++;
+        match.phase = 'night';
+        match.nightStep = 'sheikh';
+        clearNightActions(room);
+        push(room);
+        sendNightTurn(room);
+      }
+    }
+  }
+
+  push(room);
+  cb({ ok: true });
+});
   on('night:action', ({ targetId }, cb) => {
     const c = ctx();
     if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
