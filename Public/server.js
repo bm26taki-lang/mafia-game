@@ -600,6 +600,78 @@ startDay(room);
       advanceDaySpeaker(room);
     }, match.speechTimeLimit * 1000);
   }
+  // استقبال التصويت الأول
+  on('day:vote', ({ targetId }, cb) => {
+    const c = ctx();
+    if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
+
+    const room = c.room;
+    const match = room.match;
+
+    if (!match || match.phase !== 'voting' ||
+        match.votePhase !== 'initial') {
+      return cb({ ok: false, error: 'التصويت غير مفتوح الآن' });
+    }
+
+    if (!match.alive.includes(c.me.id)) {
+      return cb({ ok: false, error: 'أنت خارج المباراة' });
+    }
+
+    if (!match.voteCandidates.includes(targetId)) {
+      return cb({ ok: false, error: 'الهدف غير صالح' });
+    }
+
+    if (match.votes[c.me.id]) {
+      return cb({ ok: false, error: 'لقد صوتّ بالفعل' });
+    }
+
+    match.votes[c.me.id] = targetId;
+
+    const totalVotes = Object.keys(match.votes).length;
+
+    io.to(room.code).emit('day:vote_progress', {
+      submitted: totalVotes,
+      required: match.alive.length
+    });
+
+    if (totalVotes === match.alive.length) {
+      const counts = {};
+
+      Object.values(match.votes).forEach(id => {
+        counts[id] = (counts[id] || 0) + 1;
+      });
+
+      const highest = Math.max(...Object.values(counts));
+      const leaders = Object.keys(counts).filter(
+        id => counts[id] === highest
+      );
+
+      if (leaders.length > 1) {
+        match.votePhase = 'tie';
+        match.tieCandidates = leaders;
+
+        io.to(room.code).emit('day:vote_tie', {
+          candidates: leaders.map(id => ({
+            id,
+            name: room.players.get(id)?.name || 'لاعب'
+          })),
+          duration: match.tieTimeLimit
+        });
+      } else {
+        match.defensePlayer = leaders[0];
+        match.phase = 'defense';
+        match.votePhase = 'defense';
+
+        io.to(room.code).emit('day:defense_started', {
+          playerId: leaders[0],
+          name: room.players.get(leaders[0])?.name || 'لاعب'
+        });
+      }
+    }
+
+    push(room);
+    cb({ ok: true });
+  });
   on('night:action', ({ targetId }, cb) => {
     const c = ctx();
     if (!c) return cb({ ok: false, error: 'أنت لست في الغرفة' });
