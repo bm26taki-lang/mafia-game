@@ -688,9 +688,18 @@ function startFinalVote(room) {
           playerId: leaders[0],
           name: room.players.get(leaders[0])?.name || 'لاعب'
         });
-      }
-    }
+      
+      match.defenseTimer = setTimeout(() => {
+  if (
+    room.match !== match ||
+    match.phase !== 'defense' ||
+    match.votePhase !== 'defense'
+  ) return;
 
+  startFinalVote(room);
+}, 30 * 1000);
+    }
+    }
     push(room);
     cb({ ok: true });
   });
