@@ -973,6 +973,11 @@ on('day:final_vote', ({ targetId }, cb) => {
     if (!match.alive.includes(c.me.id))
       return cb({ ok: false, error: 'أنت خارج المباراة' });
 
+    // منع القناص من استعمال رصاصته أكثر من مرة
+    if (current.step === 'sniper' && match.sniperBulletUsed) {
+      return cb({ ok: false, error: 'لقد استعملت رصاصتك الوحيدة' });
+        }
+    
     if (typeof targetId !== 'string' ||
         !match.alive.includes(targetId) ||
         targetId === c.me.id)
