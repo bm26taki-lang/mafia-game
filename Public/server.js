@@ -1112,14 +1112,12 @@ goodboyUsed: false,
 goodboyPending: null,
     alive: [...room.players.keys()],
     eliminated: [],
-
-    actions: {
-      mafiaTarget: null,
-      silencedTarget: null,
-      ambulanceTarget: null,
-      sniperTarget: null,
-      detectiveTarget: null
-    },
+    if (
+  typeof targetId !== 'string' ||
+  !match.alive.includes(targetId) ||
+  (targetId === c.me.id && current.step !== 'ambulance')
+)
+  return cb({ ok: false, error: 'الهدف غير صالح' });
     votes: {},
     voteCandidates: [],
     defensePlayer: null,
